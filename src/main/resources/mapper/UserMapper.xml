@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nero.mybatis.dynamicsql.mapper.UserMapper">
+    <!-- 一对一查询所有用户（包含身份证信息）：级联查询的第一种方法（嵌套查询，执行两个SQL语句）-->
+    <resultMap id="baseMap" type="com.nero.mybatis.dynamicsql.domain.po.UserPO">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="sex" column="sex"/>
+    </resultMap>
+    <!-- 根据用户名称（精确查询或模糊查询）查询用户 -->
+    <select id="getUserByName" resultMap="baseMap">
+        select * from user
+        <if test="isLike == true">
+            where name like concat('%',#{name},'%')
+        </if>
+        <if test="isLike == false">
+            where name = #{name}
+        </if>
+    </select>
+    <!-- 根据用户名称（精确查询或模糊查询）查询用户 2-->
+    <select id="getUserByName2" resultMap="baseMap">
+        select * from user
+        <choose>
+            <when test="isLike == 1">
+                where name like concat('%',#{name},'%')
+            </when>
+            <when test="isLike == 0">
+                where name = #{name}
+            </when>
+            <otherwise>
+                <bind name="param_name" value="'%' + name + '%'"/>
+                where name like #{param_name}
+            </otherwise>
+        </choose>
+    </select>
+
+    <!-- 根据用户名称或性别 查询用户 -->
+    <select id="getUserByNameSex" resultMap="baseMap">
+        select * from user
+        <trim prefix="where" prefixOverrides="and | or">
+            <if test="name != null and name != ''">
+                and name = #{name}
+            </if>
+            <if test="sex != -1">
+                and sex = #{sex}
+            </if>
+        </trim>
+    </select>
+
+    <!-- 根据用户名称或性别 查询用户2 -->
+    <select id="getUserByNameSex2" resultMap="baseMap">
+        select * from user
+        <where>
+            <if test="name != null and name != ''">
+                and name = #{name}
+            </if>
+            <if test="sex != -1">
+                and sex = #{sex}
+            </if>
+        </where>
+    </select>
+
+    <!-- 更新用户 -->
+    <update id="updUser" parameterType="com.nero.mybatis.dynamicsql.domain.po.UserPO">
+        update user
+        <set>
+            <if test="name != null">
+                name = #{name},
+            </if>
+            <if test="name != null">
+                sex = #{sex},
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <!-- 根据id范围 查询用户 -->
+    <select id="getUserByIds" parameterType="_int[]" resultMap="baseMap">
+        select * from user
+        where id in
+        <foreach collection="ids" item="item" index="0" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+    </select>
+</mapper>
